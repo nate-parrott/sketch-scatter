@@ -1,0 +1,112 @@
+@import "library.cocoascript";
+
+function canvasForLayer(layer) {
+	while (![layer isKindOfClass:[MSArtboardGroup class]] && ![layer isKindOfClass:[MSPage class]]) {
+		layer = [layer parentGroup];
+	}
+	return layer;
+}
+
+function boundingBoxForCanvas(canvas) {
+	if ([canvas isKindOfClass:[MSArtboardGroup class]]) {
+		var frame = [[canvas frame] copy];
+		[frame setX:0];
+		[frame setY:0];
+		return frame;
+	} else if ([canvas isKindOfClass:[MSPage class]]) {
+		return [canvas contentBounds];
+	}
+}
+
+function NSArrayToJSArray(nsArray) {
+	var a = [];
+	for (var i=0; i<[nsArray count]; i++) {
+		a.push(nsArray[i]);
+	}
+	return a;
+}
+
+function pick1(items) {
+	return items[Math.floor(Math.random() * items.length)];
+}
+
+var onRun = function(context) {
+	log("HEY")
+  // Context is a dictionary containing a reference to the document, 
+  // the current selection, the plugin, curren URL and more.
+  var app = [NSApplication sharedApplication];
+  var doc = context.document;                // the current document (MSDocument)
+  var plugin = context.plugin;          // the plugin (MSPluginBundle)
+  var page = [doc currentPage];         // the current page (MSPage)
+  var selection = NSArrayToJSArray(context.selection);
+  if (selection.length == 0) {
+	  [app displayDialog:"Select some items to scatter before running this command." withTitle:"Nothing to Scatter"];
+	  return;
+  }
+  
+  var gridSize = parseFloat([doc askForUserInput:"How much space between items?" initialValue:"50"]);
+  
+  selection.forEach(function(s) {
+	  [s setIsVisible:false];
+  });
+  
+  var maxRadius = 0;
+  selection.forEach(function(item) {
+	  var frame = [item frame];
+	  var w = [frame width];
+	  var h = [frame height];
+	  var r = Math.sqrt(Math.pow(w, 2) + Math.pow(h, 2))/2;
+	  maxRadius = Math.max(maxRadius, r);
+  });
+  
+  var canvas = canvasForLayer(selection[0]);
+  var bbox = boundingBoxForCanvas(canvas);
+  log(bbox);
+  
+  var scatterGroup = [MSLayerGroup new];
+  [scatterGroup setName:"Scatter"];
+  // log(canvas);
+  [canvas addLayers:[scatterGroup]];
+  [scatterGroup setFrame:bbox];
+  
+  var jitter = (gridSize - maxRadius) * 0.3;
+  for (var x=bbox.x(); x<bbox.x()+bbox.width()+gridSize; x+=gridSize) {
+	  var i = 0;
+	  for (var y=bbox.y() - gridSize * (i++ % 2 ? 0.5 : 0); y<bbox.y()+bbox.height()+gridSize; y+=gridSize) {
+		  var itemToCopy = pick1(selection);
+		  var newItem = itemToCopy.duplicate();
+		  [[newItem parentGroup] removeLayer:newItem];
+		  [scatterGroup addLayers:[newItem]];
+		  var frame = [[newItem frame] copy];
+		  [frame setX:(x + jitter * (Math.random()*2 - 1))];
+		  [frame setY:(y + jitter * (Math.random()*2 - 1))];
+		  log(frame);
+		  [newItem setFrame:frame];
+		  [newItem setRotation:Math.floor(Math.random() * 360)];
+		  [newItem setIsVisible:true];
+	  }
+  }
+  // log(a)
+  // log(b)
+  
+  /*
+  // create a new group to contain the new layers (MSLayerGroup)
+  var group = SketchLib.addLayerGroup(page, {"name": [plugin name] });
+
+  // create an image layer using a resource from the plugin bundle's Contents/Resouces folder
+  var imageLayer = SketchLib.addImageLayer(group, {"name": "World", "url": [plugin urlForResourceNamed:"World.pdf"]})
+  // center on the canvas
+  SketchLib.util.centerLayer(imageLayer);
+
+  // create a text layer using the plugin's name
+  var textLayer = SketchLib.addTextLayer(group, {"text": [plugin name], "fontSize": 96});
+  // center on the canvas
+  SketchLib.util.centerLayer(textLayer);
+
+  // resize the group to contain its children
+  [group resizeRoot:true];
+
+  // center the view on our new group
+  [[doc currentView] centerRect:[group rect]];
+  */
+};

@@ -6,4 +6,4 @@ _Select some elements and randomly duplicate + scatter them across your artboard
 
 ## Installation
 
-![Download the plugin](https://github.com/nate-parrott/sketch-scatter/releases/download/1.0/Scatter.sketchplugin.zip), unzip, and double-click to install!
+[Download the plugin](https://github.com/nate-parrott/sketch-scatter/releases/download/1.0/Scatter.sketchplugin.zip), unzip, and double-click to install!

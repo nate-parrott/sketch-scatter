@@ -1,11 +1,11 @@
 {
-  "author" : "Bohemian Coding",
+  "author" : "Nate Parrott",
   "commands" : [
     {
       "script" : "script.cocoascript",
       "handler" : "onRun",
       "shortcut" : "",
-      "name" : "Scatter",
+      "name" : "Scatter…",
       "identifier" : "scatter"
     },
   ],
@@ -17,7 +17,7 @@
   },
   "identifier" : "com.nateparrott.Scatter",
   "version" : "1.0",
-  "description" : "Example Sketch Plugin using resources from within the bundle and a library script.",
-  "authorEmail" : "mail@example.com",
+  "description" : "Copies the currently-selected object and scatters it randomly across the artboard.",
+  "authorEmail" : "nate@nateparrott.com",
   "name" : "Scatter"
 }

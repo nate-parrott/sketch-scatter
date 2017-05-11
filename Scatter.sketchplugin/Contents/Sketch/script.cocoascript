@@ -8,14 +8,14 @@ function canvasForLayer(layer) {
 }
 
 function boundingBoxForCanvas(canvas) {
-	if ([canvas isKindOfClass:[MSArtboardGroup class]]) {
-		var frame = [[canvas frame] copy];
-		[frame setX:0];
-		[frame setY:0];
-		return frame;
-	} else if ([canvas isKindOfClass:[MSPage class]]) {
-		return [canvas contentBounds];
-	}
+  if ([canvas isKindOfClass:[MSArtboardGroup class]]) {
+    var frame = [[canvas frame] copy];
+    [frame setX:0];
+    [frame setY:0];
+    return frame;
+  } else if ([canvas isKindOfClass:[MSPage class]]) {
+    return [canvas contentBounds]; // this is NOT supported
+  }
 }
 
 function NSArrayToJSArray(nsArray) {
@@ -31,7 +31,6 @@ function pick1(items) {
 }
 
 var onRun = function(context) {
-	log("HEY")
   // Context is a dictionary containing a reference to the document, 
   // the current selection, the plugin, curren URL and more.
   var app = [NSApplication sharedApplication];
@@ -44,7 +43,16 @@ var onRun = function(context) {
 	  return;
   }
   
-  var gridSize = parseFloat([doc askForUserInput:"How much space between items?" initialValue:"50"]);
+  var canvas = canvasForLayer(selection[0]);
+  if (![canvas isKindOfClass:[MSArtboardGroup class]]) {
+	  [app displayDialog:"Scatter only works when your selected items belong to an artboard." withTitle:"No Artboard"];
+	  return;
+  }
+  // log("CANVAS: " + canvas)
+  var bbox = boundingBoxForCanvas(canvas);
+  // log("BBOX: " + bbox)
+  
+  var gridSize = parseFloat([doc askForUserInput:"Roughly how much space between items?" initialValue:"50"]);
   
   selection.forEach(function(s) {
 	  [s setIsVisible:false];
@@ -59,15 +67,14 @@ var onRun = function(context) {
 	  maxRadius = Math.max(maxRadius, r);
   });
   
-  var canvas = canvasForLayer(selection[0]);
-  var bbox = boundingBoxForCanvas(canvas);
-  log(bbox);
-  
   var scatterGroup = [MSLayerGroup new];
   [scatterGroup setName:"Scatter"];
-  // log(canvas);
+  
   [canvas addLayers:[scatterGroup]];
   [scatterGroup setFrame:bbox];
+  
+  var maxItemsToCreate = 5000;
+  var itemsCreated = 0;
   
   var jitter = (gridSize - maxRadius) * 0.3;
   for (var x=bbox.x(); x<bbox.x()+bbox.width()+gridSize; x+=gridSize) {
@@ -84,29 +91,12 @@ var onRun = function(context) {
 		  [newItem setFrame:frame];
 		  [newItem setRotation:Math.floor(Math.random() * 360)];
 		  [newItem setIsVisible:true];
+      
+      itemsCreated++;
+      if (itemsCreated > maxItemsToCreate) {
+    	  [app displayDialog:"Scatter will only create " + maxItemsToCreate + " new items on your canvas, so we've stopped here." withTitle:"Lots of items!"];
+        return;
+      }
 	  }
   }
-  // log(a)
-  // log(b)
-  
-  /*
-  // create a new group to contain the new layers (MSLayerGroup)
-  var group = SketchLib.addLayerGroup(page, {"name": [plugin name] });
-
-  // create an image layer using a resource from the plugin bundle's Contents/Resouces folder
-  var imageLayer = SketchLib.addImageLayer(group, {"name": "World", "url": [plugin urlForResourceNamed:"World.pdf"]})
-  // center on the canvas
-  SketchLib.util.centerLayer(imageLayer);
-
-  // create a text layer using the plugin's name
-  var textLayer = SketchLib.addTextLayer(group, {"text": [plugin name], "fontSize": 96});
-  // center on the canvas
-  SketchLib.util.centerLayer(textLayer);
-
-  // resize the group to contain its children
-  [group resizeRoot:true];
-
-  // center the view on our new group
-  [[doc currentView] centerRect:[group rect]];
-  */
 };
